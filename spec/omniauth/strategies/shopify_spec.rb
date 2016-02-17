@@ -4,7 +4,8 @@ require 'base64'
 
 describe OmniAuth::Strategies::Shopify do
   before :each do
-    @request = double('Request')
+    @request = double('Request',
+                      :env => { })
     @request.stub(:params) { {} }
     @request.stub(:cookies) { {} }
 
@@ -17,6 +18,21 @@ describe OmniAuth::Strategies::Shopify do
     args = [@client_id, @client_secret, @options].compact
     OmniAuth::Strategies::Shopify.new(nil, *args).tap do |strategy|
       strategy.stub(:request) { @request }
+      strategy.stub(:session) { {} }
+    end
+  end
+
+  describe '#fix_https' do
+    it 'replaces http scheme by https' do
+      @options = {:client_options => {:site => 'http://foo.bar/'}}
+      subject.fix_https
+      subject.options[:client_options][:site].should eq('https://foo.bar/')
+    end
+
+    it 'does not replace https scheme' do
+      @options = {:client_options => {:site => 'https://foo.bar/'}}
+      subject.fix_https
+      subject.options[:client_options][:site].should eq('https://foo.bar/')
     end
   end
 
@@ -44,6 +60,7 @@ describe OmniAuth::Strategies::Shopify do
     it "defaults to callback" do
       url_base = 'http://auth.request.com'
       @request.stub(:url) { "#{url_base}/page/path" }
+      @request.stub(:scheme) { 'http' }
       subject.stub(:script_name) { "" } # to not depend from Rack env
       subject.callback_url.should eq("#{url_base}/auth/shopify/callback")
     end
@@ -59,6 +76,12 @@ describe OmniAuth::Strategies::Shopify do
       @options = {:scope => 'write_products'}
       subject.authorize_params.should be_a(Hash)
       subject.authorize_params[:scope].should eq('write_products')
+    end
+  end
+
+  describe '#uid' do
+    it 'returns the shop' do
+      subject.uid.should eq('example.myshopify.com')
     end
   end
 
@@ -87,6 +110,29 @@ describe OmniAuth::Strategies::Shopify do
 
       @access_token.stub(:expires?) { false }
       subject.credentials['expires'].should eq(false)
+    end
+
+  end
+
+  describe '#valid_site?' do
+    it 'returns true if the site contains .myshopify.com' do
+      @options = {:client_options => {:site => 'http://foo.myshopify.com/'}}
+      subject.valid_site?.should eq(true)
+    end
+
+    it 'returns false if the site does not contain .myshopify.com' do
+      @options = {:client_options => {:site => 'http://foo.example.com/'}}
+      subject.valid_site?.should eq(false)
+    end
+
+    it 'uses configurable option for myshopify_domain' do
+      @options = {:client_options => {:site => 'http://foo.example.com/'}, :myshopify_domain => 'example.com'}
+      subject.valid_site?.should eq(true)
+    end
+
+    it 'allows custom port for myshopify_domain' do
+      @options = {:client_options => {:site => 'http://foo.example.com:3456/'}, :myshopify_domain => 'example.com:3456'}
+      subject.valid_site?.should eq(true)
     end
   end
 end

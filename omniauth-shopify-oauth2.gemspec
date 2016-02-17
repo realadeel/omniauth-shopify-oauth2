@@ -9,6 +9,7 @@ Gem::Specification.new do |s|
   s.email    = ['denis.odorcic@shopify.com']
   s.summary  = 'Shopify strategy for OmniAuth'
   s.homepage = 'https://github.com/Shopify/omniauth-shopify-oauth2'
+  s.license = 'MIT'
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
@@ -17,6 +18,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'omniauth-oauth2', '~> 1.2'
 
-  s.add_development_dependency 'rspec', '~> 2.7.0'
+  s.add_development_dependency 'minitest', '~> 5.6'
+  s.add_development_dependency 'fakeweb', '~> 1.3'
   s.add_development_dependency 'rake'
 end
